@@ -1,0 +1,35 @@
+spring:
+  profiles:
+    active: local
+  datasource:
+    url: jdbc:postgresql://localhost:5432/customerdb
+    username: examplepoc
+    password: examplepoc
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  cloud:
+    config:
+      uri: http://localhost:8888
+      fail-fast: true
+      retry:
+        initial-interval: 1000
+        max-attempts: 10
+  sql:
+    init:
+      schema-locations: classpath:create_database.sql
+logging:
+  level:
+    root: INFO
+    org:
+      springframework:
+        web: INFO
+    com:
+      example:
+        customer:
+          management: DEBUG
