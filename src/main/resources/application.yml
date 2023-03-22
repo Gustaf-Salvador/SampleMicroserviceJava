@@ -3,8 +3,8 @@ spring:
     active: local
   datasource:
     url: jdbc:postgresql://localhost:5432/customerdb
-    username: examplepoc
-    password: examplepoc
+    username: postgres
+    password: pgadmin
     driver-class-name: org.postgresql.Driver
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
@@ -31,5 +31,4 @@ logging:
         web: INFO
     com:
       example:
-        customer:
-          management: DEBUG
+        customer: DEBUG

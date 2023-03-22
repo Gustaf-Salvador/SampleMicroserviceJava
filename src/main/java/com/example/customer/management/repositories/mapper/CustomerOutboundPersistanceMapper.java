@@ -3,13 +3,15 @@ package com.example.customer.management.repositories.mapper;
 import java.util.ArrayList;
 import java.util.List;
 import org.mapstruct.Mapper;
+
 import com.example.customer.management.domains.model.Customer;
 import com.example.customer.management.repositories.CustomerRepository;
+import com.example.customer.management.repositories.FeatureFlagRepository;
 import com.example.customer.management.repositories.model.CustomerDSO;
 
 @Mapper(componentModel = "spring")
 public interface CustomerOutboundPersistanceMapper {
-
+	
     default CustomerDSO toCustomerDSO(Customer customer) {
         if (customer == null) {
             return null;
@@ -29,12 +31,12 @@ public interface CustomerOutboundPersistanceMapper {
         return customerDSO;
     }
 
-    default Customer toCustomer(CustomerRepository customerRepository, CustomerDSO customerDSO) {
+    default Customer toCustomer(CustomerRepository customerRepository, FeatureFlagRepository growthBookRepository, CustomerDSO customerDSO) {
         if (customerDSO == null) {
             return null;
         }
 
-        Customer customer = new Customer(customerRepository);
+        Customer customer = new Customer(customerRepository, growthBookRepository);
         customer.setId(customerDSO.getId());
         customer.setName(customerDSO.getName());
         customer.setEmail(customerDSO.getEmail());
@@ -47,14 +49,14 @@ public interface CustomerOutboundPersistanceMapper {
         return customer;
     }
 
-    default List<Customer> toCustomerList(CustomerRepository customerRepository, List<CustomerDSO> customerDTOs) {
+    default List<Customer> toCustomerList(CustomerRepository customerRepository, FeatureFlagRepository growthBookRepository, List<CustomerDSO> customerDTOs) {
         if (customerDTOs == null) {
             return null;
         }
 
         List<Customer> list = new ArrayList<>(customerDTOs.size());
         for (CustomerDSO customerDSO : customerDTOs) {
-            list.add(toCustomer(customerRepository, customerDSO));
+            list.add(toCustomer(customerRepository, growthBookRepository, customerDSO));
         }
 
         return list;

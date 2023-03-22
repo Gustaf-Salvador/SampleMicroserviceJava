@@ -18,6 +18,7 @@ public class JsonPatchMapper {
         JsonNode targetNode = objectMapper.convertValue(target, JsonNode.class);
         try {
             JsonNode patchedNode = jsonPatch.apply(targetNode);
+            
             return objectMapper.treeToValue(patchedNode, targetType);
         } catch (Exception e) {
             throw new RuntimeException("Failed to apply JSON patch", e);

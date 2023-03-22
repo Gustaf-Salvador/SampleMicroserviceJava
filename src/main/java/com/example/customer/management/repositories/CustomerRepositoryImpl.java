@@ -5,9 +5,10 @@ import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 import com.example.customer.management.domains.model.Customer;
-import com.example.customer.management.repositories.client.CustomerJpaClient;
+import com.example.customer.management.repositories.client.CustomerJpaClientImpl;
 import com.example.customer.management.repositories.mapper.CustomerOutboundPersistanceMapper;
 import com.example.customer.management.repositories.model.CustomerDSO;
+
 import lombok.AllArgsConstructor;
 import io.mediator.core.Mediator;
 
@@ -19,10 +20,13 @@ public class CustomerRepositoryImpl implements CustomerRepository {
     private final Mediator mediator;
 
     @Autowired
-    private final CustomerJpaClient jpaClient;
+    private final CustomerJpaClientImpl jpaClient;
 
     @Autowired
-    private final CustomerOutboundPersistanceMapper mapper;
+    private final CustomerOutboundPersistanceMapper customerMapper;
+    
+    @Autowired
+    private final FeatureFlagRepository growthBookRepository;
 
     @Override
     public Customer findById(UUID id, Boolean onlyActive) {
@@ -36,7 +40,7 @@ public class CustomerRepositoryImpl implements CustomerRepository {
         }
 
 
-        var customer = mapper.toCustomer(this, customerDSO);
+        var customer = customerMapper.toCustomer(this, growthBookRepository, customerDSO);
 
         return customer;
     }
@@ -52,14 +56,14 @@ public class CustomerRepositoryImpl implements CustomerRepository {
             customerDsoList = jpaClient.findAll();
         }
 
-        var customerList = mapper.toCustomerList(this, customerDsoList);
+        var customerList = customerMapper.toCustomerList(this, growthBookRepository, customerDsoList);
 
         return customerList;
     }
 
     @Override
     public void save(Customer customer) {
-        var customerDso = mapper.toCustomerDSO(customer);
+        var customerDso = customerMapper.toCustomerDSO(customer);
 
         jpaClient.save(customerDso);
 
@@ -68,10 +72,11 @@ public class CustomerRepositoryImpl implements CustomerRepository {
 
     @Override
     public void delete(Customer customer) {
-        var customerDso = mapper.toCustomerDSO(customer);
+        var customerDso = customerMapper.toCustomerDSO(customer);
 
         jpaClient.save(customerDso);
 
         customer.raiseDomainEvents(mediator);
     }
+
 }

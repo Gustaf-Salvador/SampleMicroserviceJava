@@ -2,17 +2,29 @@ package com.example.customer.management.services.rest.model;
 
 import java.util.UUID;
 import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @NoArgsConstructor
 @AllArgsConstructor
-@Data
 public class CustomerDTO extends RequestCustomerDTO {
 	
-    private UUID id;
+    public UUID getId() {
+		return id;
+	}
+
+	public void setId(UUID id) {
+		this.id = id;
+	}
+
+	public boolean isActive() {
+		return isActive;
+	}
+
+	public void setActive(boolean isActive) {
+		this.isActive = isActive;
+	}
+
+	private UUID id;
 
     private boolean isActive;
 }
