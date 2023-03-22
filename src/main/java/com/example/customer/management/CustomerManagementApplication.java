@@ -1,11 +1,13 @@
 package com.example.customer.management;
 
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
+
+import io.featurehub.client.EdgeFeatureHubConfig;
+import io.featurehub.client.FeatureHubConfig;
 import io.mediator.core.Mediator;
 import io.mediator.core.Registry;
 import io.mediator.spring.SpringMediator;
@@ -21,18 +23,37 @@ public class CustomerManagementApplication {
 		SpringApplication.run(CustomerManagementApplication.class, args);
 	}
 
-	@Autowired
 	public CustomerManagementApplication(ApplicationContext applicationContext) {
 		this.applicationContext = applicationContext;
 	}
 
-	@Bean
-	public Registry registry() {
+    @Bean
+    Registry registry() {
 		return new SpringRegistry(applicationContext);
 	}
 
-	@Bean
-	public Mediator mediator(Registry registry) {
+    @Bean
+    Mediator mediator(Registry registry) {
 		return new SpringMediator(registry);
 	}
+    
+    @Bean
+    FeatureHubConfig featureHubConfig() {
+      String host = System.getenv("FEATUREHUB_EDGE_URL");
+
+      if (host == null) {
+        throw new RuntimeException("Unable to determine the host for FeatureHub");
+      }
+
+      String apiKey = System.getenv("FEATUREHUB_API_KEY");
+
+      if (apiKey == null) {
+        throw new RuntimeException("Unable to determine the API key for FeatureHub");
+      }
+
+      FeatureHubConfig config = new EdgeFeatureHubConfig(host, apiKey);
+      config.init();
+
+      return config;
+    }
 }

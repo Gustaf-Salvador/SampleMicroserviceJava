@@ -19,7 +19,6 @@ import com.example.customer.management.applications.requestEvent.model.CreateCus
 import com.example.customer.management.applications.requestEvent.model.DeleteCustomersRequestEvent;
 import com.example.customer.management.applications.requestEvent.model.GetCustomersByIdRequestEvent;
 import com.example.customer.management.applications.requestEvent.model.ListCustomersRequestEvent;
-import com.example.customer.management.applications.requestEvent.model.PatchCustomersRequestEvent;
 import com.example.customer.management.applications.requestEvent.model.UpdateCustomersRequestEvent;
 import com.example.customer.management.domains.model.Customer;
 import com.example.customer.management.services.rest.mapper.CustomerInboundRestMapper;
@@ -38,6 +37,9 @@ public class CustomerController {
 
     @Autowired
     private CustomerInboundRestMapper customerInboundRestMapper;
+    
+    @Autowired
+    private JsonPatchMapper jsonPatchMapper;
 
     @GetMapping
     public ResponseEntity<List<CustomerDTO>> getAllCustomers(@RequestParam(name = "onlyActive", required = false) Boolean onlyActive) {
@@ -72,26 +74,34 @@ public class CustomerController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<CustomerDTO> updateCustomer(@PathVariable UUID id, @RequestBody RequestCustomerDTO customerDTO) {
-        UpdateCustomersRequestEvent updateCustomersRequestEvent = new UpdateCustomersRequestEvent(id,
-            customerDTO.getName(),
-            customerDTO.getEmail(),
-            customerDTO.getBirthdate(),
-            customerDTO.getPhoneNumber());
+    public ResponseEntity<CustomerDTO> updateCustomer(@PathVariable UUID id, @RequestBody RequestCustomerDTO requestCustomerDTO) {
+
+    	UpdateCustomersRequestEvent updateCustomersRequestEvent = new UpdateCustomersRequestEvent(id,
+    			requestCustomerDTO.getName(),
+    			requestCustomerDTO.getEmail(),
+    			requestCustomerDTO.getBirthdate(),
+    			requestCustomerDTO.getPhoneNumber());
 
         Customer customer = mediator.dispatch(updateCustomersRequestEvent);
 
-        CustomerDTO createdCustomerDTO = customerInboundRestMapper.toCustomerDTO(customer);
-        return ResponseEntity.ok(createdCustomerDTO);
+        CustomerDTO customerDTO = customerInboundRestMapper.toCustomerDTO(customer);
+                	
+        return ResponseEntity.ok(customerDTO);
     }
 
     @PatchMapping("/{id}")
-    public ResponseEntity<CustomerDTO> patchCustomer(@PathVariable UUID id, @RequestBody JsonPatch customerDTO) {
-        PatchCustomersRequestEvent patchCustomersRequestEvent = new PatchCustomersRequestEvent(id, customerDTO);
-        Customer updatedCustomer = mediator.dispatch(patchCustomersRequestEvent);
+    public ResponseEntity<CustomerDTO> patchCustomer(@PathVariable UUID id, @RequestBody JsonPatch patchCustomerDTO) {
+        
+    	GetCustomersByIdRequestEvent getCustomersByIdRequestEvent = new GetCustomersByIdRequestEvent(id);
+        Customer customer = mediator.dispatch(getCustomersByIdRequestEvent);
+        
+        CustomerDTO customerDTO = customerInboundRestMapper.toCustomerDTO(customer);
 
-        CustomerDTO updatedCustomerDTO = customerInboundRestMapper.toCustomerDTO(updatedCustomer);
-        return ResponseEntity.ok(updatedCustomerDTO);
+        customerDTO = jsonPatchMapper.apply(patchCustomerDTO, customerDTO, CustomerDTO.class);
+        
+        ResponseEntity<CustomerDTO> responseCustomerDTO = updateCustomer(id, customerDTO);
+        
+        return responseCustomerDTO;
     }
 
     @DeleteMapping("/{id}")
@@ -100,4 +110,5 @@ public class CustomerController {
         mediator.dispatch(deleteCustomersRequestEvent);
         return ResponseEntity.noContent().build();
     }
+    
 }

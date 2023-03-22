@@ -13,11 +13,14 @@ import com.example.customer.management.domains.event.UserChangedDomainEvent;
 import com.example.customer.management.domains.event.UserCreatedDomainEvent;
 import com.example.customer.management.domains.event.UserRemovedDomainEvent;
 import com.example.customer.management.repositories.CustomerRepository;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.Getter;
-import lombok.SneakyThrows;
+import com.example.customer.management.repositories.FeatureFlagRepository;
+import com.fasterxml.jackson.annotation.JsonCreator;
+
 import io.mediator.domain.AbstractDomainBase;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.SneakyThrows;
 import javassist.NotFoundException;
 
 @Getter
@@ -35,9 +38,14 @@ public class Customer extends AbstractDomainBase {
     
     private LocalDate birthdate;
     
+	@Setter
     private LocalDateTime createDateUtc;
 
+	@Setter
     private LocalDateTime modifiedDateUtc;
+    
+	@Setter
+	private boolean isActive;
 
 	public void setId(UUID id) {
 		this.id = id;
@@ -45,6 +53,10 @@ public class Customer extends AbstractDomainBase {
 
 	public void setName(String name) {
 		if (this.name != null && !this.name.equals(name)) {
+			if (!growthBookRepository.isOn("allow-change-name")) {
+				throw new RuntimeException("Change is not allowed by feature flag");
+			}
+				
 			addDomainEvent(new UserChangedDomainEvent(this, "name", this.name, name));
 		}
 
@@ -75,41 +87,39 @@ public class Customer extends AbstractDomainBase {
 		this.birthdate = birthdate;
 	}
 
-	public void setCreateDateUtc(LocalDateTime createDateUtc) {
-		this.createDateUtc = createDateUtc;
-	}
-
-	public void setModifiedDateUtc(LocalDateTime modifiedDateUtc) {
-		this.modifiedDateUtc = modifiedDateUtc;
-	}
-
-	public void setActive(boolean active) {
-		isActive = active;
-	}
-
-	private boolean isActive;
-
 	private CustomerRepository customerRepository;
+
+	private FeatureFlagRepository growthBookRepository;
 
 	public static Customer create(
 		CustomerRepository customerRepository,
+		FeatureFlagRepository growthBookRepository,
 		String name, @NotNull LocalDate birthdate, String phoneNumber, String email) {
-		Customer customer = new Customer(customerRepository, name, birthdate, phoneNumber, email);
+		Customer customer = new Customer(customerRepository, growthBookRepository, name, birthdate, phoneNumber, email);
 
 		customer.validate();
 
 		return customer;
 	}
 
+	@JsonCreator
+	public Customer() {
+		
+	}
+	
 	@Autowired
-	public Customer(CustomerRepository customerRepository){
+	public Customer(CustomerRepository customerRepository,
+			FeatureFlagRepository growthBookRepository){
+		this();
 		this.customerRepository = customerRepository;
+		this.growthBookRepository = growthBookRepository;
 	}
 
 	public Customer(
 		CustomerRepository customerRepository,
+		FeatureFlagRepository growthBookRepository,
 		String name, @NotNull LocalDate birthdate, String phoneNumber, String email) {
-		this(customerRepository);
+		this(customerRepository, growthBookRepository);
 		
 		this.id = UUID.randomUUID();
 		this.name = name;
